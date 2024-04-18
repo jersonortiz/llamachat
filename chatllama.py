@@ -33,12 +33,13 @@ class Llama:
 
         self.document_chain = create_stuff_documents_chain(self.llm, self.prompt)
 
-    def loadpdf(self,pdf_file_path):
+
+    def load_pdf(self,pdf_file_path):
 
         loader = PyPDFLoader(file_path=pdf_file_path)
         return loader.load()
 
-    def loadWeb(self):
+    def load_web(self):
         loader = WebBaseLoader("https://docs.smith.langchain.com/tracing")
         return loader.load()
 

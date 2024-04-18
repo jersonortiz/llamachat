@@ -1,11 +1,13 @@
 import time
 #from chatllama import Llama
-from convllama import Llama
+#from convllama import Llama
+from agent_llama import Llama
 
 if __name__ == "__main__":
-    chat = Llama()
-    docs  = chat.loadWeb()
+    chat = Llama(history=False)
+    docs  = chat.load_web()
     chat.ingest(docs)
+    chat.create_retriever_chain()
 
     while True:
         query = input('>>>')

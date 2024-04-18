@@ -12,6 +12,8 @@ from langchain.chains import create_retrieval_chain
 import time
 from langchain.chains import create_history_aware_retriever
 from langchain_core.prompts import MessagesPlaceholder
+from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
+from langchain.memory import ConversationBufferMemory
 
 class Llama:
 
