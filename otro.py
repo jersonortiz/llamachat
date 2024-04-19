@@ -10,9 +10,9 @@ from crewai_tools import SerperDevTool
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import ChatOpenAI
 from langchain_community.llms import Ollama
+from langchain_community.embeddings import GPT4AllEmbeddings
 
-
-host = "https://7c8c-35-194-191-67.ngrok-free.app"
+host = "https://8b51-34-125-1-53.ngrok-free.app"
 
 ollama_llm = Ollama(base_url=host,model="openhermes")
 
@@ -60,7 +60,7 @@ crew = Crew(
 researcher = Agent(
   role='Senior Researcher',
   goal='Uncover groundbreaking technologies in {topic}',
-  verbose=True,
+  verbose=1,
   memory=True,
   backstory=(
     "Driven by curiosity, you're at the forefront of"
@@ -75,7 +75,7 @@ llm=ollama_llm,
 writer = Agent(
   role='Writer',
   goal='Narrate compelling tech stories about {topic}',
-  verbose=True,
+  verbose=1,
   memory=True,
   backstory=(
     "With a flair for simplifying complex topics, you craft"
@@ -124,14 +124,22 @@ share_crew=True,
   max_rpm=100,
     verbose=2,
 llm=ollama_llm,
+  embedder={
+    "provider": "gpt4all"
+  }
+
+)
+"""
+for hugginface embedings
+
     embedder={
         "provider": "huggingface",
         "config": {
-            "model": "mixedbread-ai/mxbai-embed-large-v1",  # https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1
+            "model": "sentence-transformers/all-MiniLM-L12-v2",  # https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1
         }
     }
+"""
 
-)
 
 result = crew.kickoff(inputs={'topic': 'AI in healthcare'})
 print(result)
