@@ -23,7 +23,7 @@ class Llama:
 
     def __init__(self, history = True):
         self.with_history = history
-        self.host = "https://8dc5-34-125-236-108.ngrok-free.app"
+        self.host = "https://7c8c-35-194-191-67.ngrok-free.app"
         self.llm = Ollama(base_url=self.host, model="llama2")
         self.prompt = self.get_prompt()
         self.chat_history = []

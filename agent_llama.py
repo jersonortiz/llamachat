@@ -1,7 +1,8 @@
 from langchain_community.document_loaders.pdf import PyPDFLoader
 from langchain_community.llms import Ollama
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate, \
+    PromptTemplate
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -12,8 +13,13 @@ from langchain.chains import create_retrieval_chain
 import time
 from langchain.chains import create_history_aware_retriever
 from langchain_core.prompts import MessagesPlaceholder
-from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
-from langchain.memory import ConversationBufferMemory
+from langchain.tools.retriever import create_retriever_tool
+from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain.agents import AgentExecutor
+from langchain.agents import create_tool_calling_agent
+from langchain.agents import initialize_agent
+
+
 
 class Llama:
 
@@ -22,13 +28,40 @@ class Llama:
     retriever = None
     retrieval_chain = None
     vector= None
+    retriever = None
 
     def __init__(self, history = True):
         self.with_history = history
-        self.host = "https://8dc5-34-125-236-108.ngrok-free.app"
+        self.host = "https://433e-34-16-189-230.ngrok-free.app"
         self.llm = Ollama(base_url=self.host, model="llama2")
         self.prompt = self.get_prompt()
         self.chat_history = []
+
+    def create_search_tool(self):
+
+        search = TavilySearchResults()
+        retriever_tool = create_retriever_tool(
+            self.retriever,
+            "langsmith_search",
+            "Search for information about LangSmith. For any questions about LangSmith, you must use this tool!",
+        )
+
+        tools = [search, retriever_tool]
+
+        prompt = ChatPromptTemplate.from_messages([SystemMessagePromptTemplate(prompt=PromptTemplate(input_variables=[], template='You are a helpful assistant')),
+                                                   MessagesPlaceholder(variable_name='chat_history', optional=True),
+                                                   HumanMessagePromptTemplate(prompt=PromptTemplate(input_variables=['input'], template='{input}')),
+                                                   MessagesPlaceholder(variable_name='agent_scratchpad')
+                                                   ])
+
+        agent = create_tool_calling_agent(self.llm, tools, prompt)
+
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+        res = agent_executor.invoke({"input": "hi!"})
+
+        print(res)
+
 
     def get_prompt(self):
         if self.with_history:
@@ -47,11 +80,9 @@ class Llama:
         loader = PyPDFLoader(file_path=pdf_file_path)
         return loader.load()
 
-
-    def load_web(self):
-        loader = WebBaseLoader("https://docs.smith.langchain.com/tracing")
+    def load_web(self, url='https://docs.smith.langchain.com/tracing'):
+        loader = WebBaseLoader(url)
         return loader.load()
-
 
     def ingest(self, docs):
         print(docs)
@@ -71,14 +102,14 @@ class Llama:
         self.vector = FAISS.from_documents(documents, embeddings)
         print(self.vector.index.ntotal)
         print(time.perf_counter() - start)
+        self.etriever = self.vector.as_retriever()
 
     def create_retriever_chain(self):
 
         document_chain = create_stuff_documents_chain(self.llm, self.prompt)
-        retriever = self.vector.as_retriever()
         if self.with_history:
-            self.retrieval_chain = self.history_retriever_chain(retriever)
-        self.retrieval_chain = create_retrieval_chain(retriever , document_chain)
+            self.retrieval_chain = self.history_retriever_chain(self.retriever)
+        self.retrieval_chain = create_retrieval_chain(self.retriever , document_chain)
 
     def history_retriever_chain(self, retriever):
         contextualize_q_prompt = ChatPromptTemplate.from_messages([
