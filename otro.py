@@ -1,20 +1,20 @@
 from crewai import Agent, Task, Crew, Process
 from langchain_core.tools import Tool
 
-import os
-from crewai import Agent, Task, Crew, Process
 
-### OLLAMA (THANKS TO LANGCHAIN)
-from crewai import Agent
+
 from crewai_tools import SerperDevTool
 from langchain_community.tools import DuckDuckGoSearchRun
+
 from langchain_openai import ChatOpenAI
 from langchain_community.llms import Ollama
 from langchain_community.embeddings import GPT4AllEmbeddings
 
-host = "https://8b51-34-125-1-53.ngrok-free.app"
 
-ollama_llm = Ollama(base_url=host,model="openhermes")
+groq = "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"
+host = "https://e28e-35-184-25-249.ngrok-free.app"
+
+ollama_llm = Ollama(base_url=host,model="llama3")
 
 llm= ChatOpenAI(base_url=host,model="openhermes",api_key="NA")
 #openhermes
@@ -68,8 +68,7 @@ researcher = Agent(
     "the world."
   ),
   tools=[search_tool],
-  allow_delegation=True,
-llm=ollama_llm,
+  allow_delegation=True
 )
 # Creating a writer agent with custom tools and delegation capability
 writer = Agent(
@@ -83,8 +82,7 @@ writer = Agent(
     "discoveries to light in an accessible manner."
   ),
   tools=[search_tool],
-  allow_delegation=False,
-llm=ollama_llm,
+  allow_delegation=False
 )
 # Research task
 research_task = Task(
@@ -123,7 +121,6 @@ share_crew=True,
   cache=True,
   max_rpm=100,
     verbose=2,
-llm=ollama_llm,
   embedder={
     "provider": "gpt4all"
   }

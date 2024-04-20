@@ -12,8 +12,9 @@ from langchain.chains import create_retrieval_chain
 import time
 from langchain.chains import create_history_aware_retriever
 from langchain_core.prompts import MessagesPlaceholder
+from langchain_community.chat_models import ChatOllama
 
-class Llama:
+class LlamaHistory:
 
     llm = None
     prompt = None
@@ -23,8 +24,8 @@ class Llama:
 
     def __init__(self, history = True):
         self.with_history = history
-        self.host = "https://7c8c-35-194-191-67.ngrok-free.app"
-        self.llm = Ollama(base_url=self.host, model="llama2")
+        self.host = "https://f8d3-35-184-25-249.ngrok-free.app"
+        self.llm = ChatOllama(base_url=self.host, model="openhermes")
         self.prompt = self.get_prompt()
         self.chat_history = []
 
@@ -52,7 +53,6 @@ class Llama:
 
 
     def ingest(self, docs):
-        print(docs)
         embeddings = OllamaEmbeddings( base_url=self.host, model="all-minilm")
 
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=256,
@@ -63,11 +63,8 @@ class Llama:
         documents = text_splitter.split_documents(docs)
         documents = filter_complex_metadata(documents)
 
-        print(embeddings)
-
         start = time.perf_counter()
         self.vector = FAISS.from_documents(documents, embeddings)
-        print(self.vector.index.ntotal)
         print(time.perf_counter() - start)
 
     def create_retriever_chain(self):

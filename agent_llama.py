@@ -16,8 +16,9 @@ from langchain_core.prompts import MessagesPlaceholder
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.agents import AgentExecutor
-from langchain.agents import create_tool_calling_agent
+from langchain.agents import AgentExecutor, tool
 from langchain.agents import initialize_agent
+from langchain_community.chat_models import ChatOllama
 
 
 
@@ -32,8 +33,8 @@ class Llama:
 
     def __init__(self, history = True):
         self.with_history = history
-        self.host = "https://ba7e-104-197-236-137.ngrok-free.app"
-        self.llm = Ollama(base_url=self.host, model="llama2")
+        self.host = "https://e28e-35-184-25-249.ngrok-free.app"
+        self.llm = Ollama(base_url=self.host, model="openhermes")
         self.prompt = self.get_prompt()
         self.chat_history = []
 
@@ -54,7 +55,26 @@ class Llama:
                                                    MessagesPlaceholder(variable_name='agent_scratchpad')
                                                    ])
 
-        agent = create_tool_calling_agent(self.llm, tools, prompt)
+        llm_with_tools = self.llm.bind_tools(tools)
+
+        from langchain.agents.format_scratchpad.openai_tools import (
+            format_to_openai_tool_messages,
+        )
+        from langchain.agents.output_parsers.openai_tools import OpenAIToolsAgentOutputParser
+
+        agent = (
+                {
+                    "input": lambda x: x["input"],
+                    "agent_scratchpad": lambda x: format_to_openai_tool_messages(
+                        x["intermediate_steps"]
+                    ),
+                }
+                | prompt
+                | llm_with_tools
+                | OpenAIToolsAgentOutputParser()
+        )
+
+        #agent = create_tool_calling_agent(self.llm, tools, prompt)
 
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -85,9 +105,8 @@ class Llama:
         return loader.load()
 
     def ingest(self, docs):
-        print(docs)
-        embeddings = OllamaEmbeddings( base_url=self.host, model="all-minilm")
 
+        embeddings = OllamaEmbeddings( base_url=self.host, model="all-minilm")
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=256,
                                                        chunk_overlap=20,
                                                        length_function=len,
@@ -96,11 +115,9 @@ class Llama:
         documents = text_splitter.split_documents(docs)
         documents = filter_complex_metadata(documents)
 
-        print(embeddings)
-
         start = time.perf_counter()
         self.vector = FAISS.from_documents(documents, embeddings)
-        print(self.vector.index.ntotal)
+
         print(time.perf_counter() - start)
         self.etriever = self.vector.as_retriever()
 
